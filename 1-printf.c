@@ -1,46 +1,49 @@
-#include "main.h.h"
+#include "main.h"
 
 /**
- * _printf - Receives the main string and all the necessary parameters to
- * print a formated string
- * @format: A string containing all the desired characters
- * Return: A total count of the characters printed
+ * _printf - prints and input into the standard output 
+ * @format: the format string
+ *
+ * Return: number of bytes printed
  */
 int _printf(const char *format, ...)
 {
-	int i;
-	int j;
-	int printed_chars;
-	conver_t f_list[] = {
-		{"c", print_char},
-		{NULL, NULL}
-	};
-	va_list arg_list;
+	int sum = 0;
+	va_list ap;
+	char *p, *start;
+	params_t params = PARAMS_INIT;
 
-	va_start(arg_list, format);
-	if (format == NULL)
+	va_start(ap, format);
+
+	if (!format || (format[0] == '%' && !format[1]))/* checking for NULL character*/
 		return (-1);
-	for (i = 0; format[i] != '\0'; i++)/* Iterates through the main str*/
+	if (format[0] == '%' && format[1] == ' ' && !format[2])
+		return (-1);
+	for (p = (char *)format; *p; p++)
 	{
-		if (format[i] == '%') /*Checks for format specifiers*/
+		init_params(&params, ap);
+		if (*p != '%')/*checking for the % specifier*/
 		{
-			/*Iterates through struct to find the right func*/
-			for (j = 0; f_list[i].sym != NULL; j++)
-			{
-				if (format[i + 1] == f_list[j].sym[0])
-				{
-					f_list[j].f(arg_list);
-					break;
-				}
-			}
-			i = i + 1; /*Updating i to skip format symbols*/
+			sum += _putchar(*p);
+			continue;
 		}
+		start = p;
+		p++;
+		while (get_flag(p, &params)) /* while char at p is flag char */
+		{
+			p++; /* next char */
+		}
+		p = get_width(p, &params, ap);
+		p = get_precision(p, &params, ap);
+		if (get_modifier(p, &params))
+			p++;
+		if (!get_specifier(p))
+			sum += print_from_to(start, p,
+				params.l_modifier || params.h_modifier ? p - 1 : 0);
 		else
-		{
-			_write_char(format[i]); /*call the write function*/
-		}
-		printed_chars++;
+			sum += get_print_func(p, ap, &params);
 	}
-	_write_char('\n');
-	return (printed_chars);
+	_putchar(BUF_FLUSH);
+	va_end(ap);
+	return (sum);
 }
